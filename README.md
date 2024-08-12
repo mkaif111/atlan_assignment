@@ -110,14 +110,15 @@ app = FastAPI()
 # Mock security check
 SECRET_KEY = "mysecretkey"
 
-def security_check(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+# Mock security check
+def security_check(authorization: str = Header(None)):
+    # Expect the header to be in the form "Bearer <token>"
+    if authorization is None or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
+    
+    token = authorization.split(" ")[1]
+    # Simulate a successful security check by returning a mock payload
+    return {"user_id": "test_user", "role": "admin", "token": token}
 
 class Metadata(BaseModel):
     entity_id: str
@@ -153,7 +154,7 @@ def transform_metadata(metadata):
     # Example transformation: Add a timestamp and enriched data
     metadata['transformed'] = True
     metadata['timestamp'] = '2024-08-12T12:00:00Z'
-    metadata['enrichment'] = 'additional info'
+    metadata['enrichment'] = metadata['type']
     return metadata
 
 for message in consumer:
@@ -205,5 +206,35 @@ for message in consumer:
    python transformation_service.py
    python automation_service.py
    ```
+6.**Send Metadata to the Ingestion Service
+Send metadata to the ingestion service using curl:
+Critical
+```bash
+curl -X POST "http://localhost:8000/ingest_metadata/" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer mock_token" \
+-d '{
+    "entity_id": "table_123",
+    "type" : "PII",
+    "data": {
+        "column1": "value1",
+        "column2": "value2"
+    }
+}'
+```
+Non Critical
 
+```bash
+curl -X POST "http://localhost:8000/ingest_metadata/" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer mock_token" \
+-d '{
+    "entity_id": "table_123",
+    "type" : "standard",
+    "data": {
+        "column1": "value1",
+        "column2": "value2"
+    }
+}'
+```
 ---
