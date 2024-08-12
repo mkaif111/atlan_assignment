@@ -123,6 +123,7 @@ def security_check(authorization: str = Header(None)):
 class Metadata(BaseModel):
     entity_id: str
     data: Dict[str, str]
+    type: str  
 
 # Kafka Producer to send messages to the metadata store
 producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
